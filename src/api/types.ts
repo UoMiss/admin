@@ -53,6 +53,7 @@ export interface AdminProduct {
   images: string[]
   tags: string[]
   purchase_type: string
+  max_purchase_quantity: number
   fulfillment_type: string
   manual_form_schema: Record<string, unknown> | null
   manual_stock_total: number

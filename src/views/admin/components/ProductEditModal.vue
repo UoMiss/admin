@@ -100,6 +100,7 @@ const form = reactive({
   images: [] as string[],
   tags: [] as string[],
   purchase_type: 'member',
+  max_purchase_quantity: '' as number | '',
   fulfillment_type: 'manual',
   manual_stock_total: 0,
   skus: [] as SKUFormItem[],
@@ -395,6 +396,7 @@ const resetForm = () => {
     images: [],
     tags: [],
     purchase_type: 'member',
+    max_purchase_quantity: '',
     fulfillment_type: 'manual',
     manual_stock_total: 0,
     skus: [],
@@ -436,6 +438,7 @@ const populateForm = (product: AdminProduct) => {
     images: imagesList,
     tags: tagsList,
     purchase_type: product.purchase_type || 'member',
+    max_purchase_quantity: Number(product.max_purchase_quantity || 0) > 0 ? Math.floor(Number(product.max_purchase_quantity || 0)) : '',
     fulfillment_type: product.fulfillment_type || 'manual',
     manual_stock_total: resolveManualStockMetrics(product).total,
     skus: Array.isArray(product.skus) ? product.skus.map((item: AdminProductSKU) => createSKUFormItem(item)) : [],
@@ -461,6 +464,7 @@ const handleSubmit = async () => {
       const priceSource = activeSKU || normalizedSKUs[0]!
       effectivePrice = Number(priceSource.price_amount)
     }
+    const normalizedMaxPurchaseQuantity = Number(form.max_purchase_quantity)
     const effectiveManualStockTotal = normalizedSKUs.length
       ? (() => {
           const activeRows = normalizedSKUs.filter((item) => item.is_active)
@@ -482,6 +486,9 @@ const handleSubmit = async () => {
       images: form.images,
       tags: form.tags,
       purchase_type: form.purchase_type,
+      max_purchase_quantity: Number.isFinite(normalizedMaxPurchaseQuantity) && normalizedMaxPurchaseQuantity > 0
+        ? Math.floor(normalizedMaxPurchaseQuantity)
+        : 0,
       fulfillment_type: form.fulfillment_type,
       manual_stock_total: effectiveManualStockTotal,
       skus: normalizedSKUs,
@@ -679,6 +686,17 @@ watch(
                 <SelectItem value="guest">{{ t('admin.products.purchaseType.guest') }}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div class="col-span-1">
+            <label class="block text-xs font-medium text-muted-foreground mb-1.5">{{ t('admin.products.form.maxPurchaseQuantity') }}</label>
+            <Input
+              v-model.number="form.max_purchase_quantity"
+              type="number"
+              min="1"
+              :placeholder="t('admin.products.form.maxPurchaseQuantityPlaceholder')"
+            />
+            <p class="mt-1 text-xs text-muted-foreground">{{ t('admin.products.form.maxPurchaseQuantityTip') }}</p>
           </div>
 
           <div class="col-span-1">
