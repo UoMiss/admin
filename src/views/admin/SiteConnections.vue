@@ -38,6 +38,7 @@ const form = reactive({
   callback_url: '',
   retry_max: 3,
   retry_intervals: '30,60,120',
+  exchange_rate: 1,
   price_markup_percent: 0,
   price_rounding_mode: 'none',
   auto_sync_price: 'false',
@@ -97,6 +98,7 @@ const resetForm = () => {
     callback_url: '',
     retry_max: 3,
     retry_intervals: '30,60,120',
+    exchange_rate: 1,
     price_markup_percent: 0,
     price_rounding_mode: 'none',
     auto_sync_price: 'false',
@@ -134,6 +136,7 @@ const openEditModal = (conn: AdminSiteConnection) => {
       }
       return '30,60,120'
     })(),
+    exchange_rate: conn.exchange_rate ?? 1,
     price_markup_percent: conn.price_markup_percent ?? 0,
     price_rounding_mode: conn.price_rounding_mode || 'none',
     auto_sync_price: conn.auto_sync_price ? 'true' : 'false',
@@ -160,6 +163,7 @@ const buildPayload = () => {
     callback_url: form.callback_url,
     retry_max: Number(form.retry_max) || 3,
     retry_intervals: JSON.stringify(intervals),
+    exchange_rate: Number(form.exchange_rate) || 1,
     price_markup_percent: Number(form.price_markup_percent) || 0,
     price_rounding_mode: form.price_rounding_mode,
     auto_sync_price: form.auto_sync_price === 'true',
@@ -423,7 +427,12 @@ onMounted(() => {
 
           <div class="border-t border-border pt-4">
             <h3 class="mb-3 text-sm font-medium text-foreground">{{ t('siteConnections.form.markupSection') }}</h3>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-xs font-medium text-muted-foreground">{{ t('siteConnections.form.exchangeRate') }}</label>
+                <Input v-model.number="form.exchange_rate" type="number" step="0.000001" min="0" placeholder="1" />
+                <p class="mt-1 text-xs text-muted-foreground">{{ t('siteConnections.form.exchangeRateHint') }}</p>
+              </div>
               <div>
                 <label class="mb-1.5 block text-xs font-medium text-muted-foreground">{{ t('siteConnections.form.priceMarkupPercent') }}</label>
                 <div class="relative">
