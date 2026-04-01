@@ -2271,6 +2271,8 @@ const messages = {
           fromNamePlaceholder: '如 Dujiao-Next',
           useTLS: '启用 STARTTLS',
           useSSL: '启用 SSL',
+          orderNotificationEnabled: '启用订单邮件通知',
+          orderNotificationHint: '开启后，订单状态变更时将发送邮件通知用户',
           verifyCode: {
             title: '验证码策略',
             expireMinutes: '过期分钟',
@@ -5212,6 +5214,8 @@ const messages = {
           fromNamePlaceholder: '例如 Dujiao-Next',
           useTLS: '啟用 STARTTLS',
           useSSL: '啟用 SSL',
+          orderNotificationEnabled: '啟用訂單郵件通知',
+          orderNotificationHint: '開啟後，訂單狀態變更時將發送郵件通知用戶',
           verifyCode: {
             title: '驗證碼策略',
             expireMinutes: '過期分鐘',
@@ -8153,6 +8157,8 @@ const messages = {
           fromNamePlaceholder: 'e.g. Dujiao-Next',
           useTLS: 'Use STARTTLS',
           useSSL: 'Use SSL',
+          orderNotificationEnabled: 'Enable order email notifications',
+          orderNotificationHint: 'When enabled, users will receive email notifications on order status changes',
           verifyCode: {
             title: 'Verification Code Policy',
             expireMinutes: 'Expire minutes',

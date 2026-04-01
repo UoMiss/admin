@@ -207,6 +207,7 @@ const smtpData = reactive({
   from_name: '',
   use_tls: true,
   use_ssl: false,
+  order_notification_enabled: true,
   verify_code: {
     expire_minutes: 10,
     send_interval_seconds: 60,
@@ -456,6 +457,7 @@ const fetchSettings = async () => {
       smtpData.from_name = String(smtp.from_name || '')
       smtpData.use_tls = !!smtp.use_tls
       smtpData.use_ssl = !!smtp.use_ssl
+      smtpData.order_notification_enabled = smtp.order_notification_enabled !== false
       const verifyCode = smtp.verify_code as Record<string, unknown> | undefined
       smtpData.verify_code.expire_minutes = normalizeNumber(verifyCode?.expire_minutes, 10)
       smtpData.verify_code.send_interval_seconds = normalizeNumber(verifyCode?.send_interval_seconds, 60)
