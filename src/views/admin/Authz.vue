@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI, type AdminAuthzAdmin, type AdminAuthzPolicy, type AdminPermissionCatalogItem } from '@/api/admin'
+import { useAdminAuthStore } from '@/stores/auth'
 import IdCell from '@/components/IdCell.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -53,8 +54,15 @@ const textMap = {
     adminTableUsername: '账号',
     adminTableRoles: '角色',
     adminTableSuper: '超管',
+    adminTableTotp: '2FA',
     adminTableCreatedAt: '创建时间',
     adminTableLastLoginAt: '最近登录',
+    adminTotpEnabled: '已启用',
+    adminTotpDisabled: '未启用',
+    adminTotpReset: '重置 2FA',
+    adminTotpResetConfirm: '确认重置 {name} 的两步验证？目标将被强制下线。',
+    adminTotpResetSuccess: '已重置',
+    adminTotpResetFailed: '重置失败',
     adminRolesEmpty: '未分配',
     adminSelectRoleTarget: '设为角色分配对象',
     adminRoleTargetSelected: '已选择',
@@ -144,8 +152,15 @@ const textMap = {
     adminTableUsername: '帳號',
     adminTableRoles: '角色',
     adminTableSuper: '超管',
+    adminTableTotp: '2FA',
     adminTableCreatedAt: '建立時間',
     adminTableLastLoginAt: '最近登入',
+    adminTotpEnabled: '已啟用',
+    adminTotpDisabled: '未啟用',
+    adminTotpReset: '重設 2FA',
+    adminTotpResetConfirm: '確認重設 {name} 的兩步驗證？目標將被強制登出。',
+    adminTotpResetSuccess: '已重設',
+    adminTotpResetFailed: '重設失敗',
     adminRolesEmpty: '未分配',
     adminSelectRoleTarget: '設為角色分配對象',
     adminRoleTargetSelected: '已選擇',
@@ -235,8 +250,15 @@ const textMap = {
     adminTableUsername: 'Username',
     adminTableRoles: 'Roles',
     adminTableSuper: 'Super',
+    adminTableTotp: '2FA',
     adminTableCreatedAt: 'Created At',
     adminTableLastLoginAt: 'Last Login',
+    adminTotpEnabled: 'Enabled',
+    adminTotpDisabled: 'Disabled',
+    adminTotpReset: 'Reset 2FA',
+    adminTotpResetConfirm: 'Reset 2FA for {name}? They will be forced to sign in again.',
+    adminTotpResetSuccess: 'Reset',
+    adminTotpResetFailed: 'Reset failed',
     adminRolesEmpty: 'Unassigned',
     adminSelectRoleTarget: 'Set as role target',
     adminRoleTargetSelected: 'Selected',
@@ -325,6 +347,7 @@ const permissionCatalog = ref<AdminPermissionCatalogItem[]>([])
 const collapsedModules = ref<string[]>([])
 
 const admins = ref<AdminAuthzAdmin[]>([])
+const authStore = useAdminAuthStore()
 const selectedAdminId = ref<number>(0)
 const selectedAdminRoles = ref<string[]>([])
 const adminKeyword = ref('')
@@ -739,6 +762,23 @@ const handleDeleteAdmin = async (admin: AdminAuthzAdmin) => {
   }
 }
 
+const resetAdmin2FA = async (admin: AdminAuthzAdmin) => {
+  const confirmed = await confirmAction({
+    description: formatText(text.value.adminTotpResetConfirm, { name: admin.username }),
+    variant: 'destructive',
+  })
+  if (!confirmed) return
+  try {
+    await adminAPI.resetAdmin2FA(admin.id)
+    notifySuccess(text.value.adminTotpResetSuccess)
+    await fetchAdmins()
+  } catch (err: any) {
+    if (!err?.__notified) {
+      notifyError(text.value.adminTotpResetFailed)
+    }
+  }
+}
+
 const handleSaveAdminRoles = async () => {
   if (!selectedAdminId.value) {
     notifyError(text.value.selectAdminFirst)
@@ -804,6 +844,7 @@ onMounted(async () => {
                   <TableHead class="min-w-[140px] px-4 py-3">{{ text.adminTableUsername }}</TableHead>
                   <TableHead class="min-w-[160px] px-4 py-3">{{ text.adminTableRoles }}</TableHead>
                   <TableHead class="min-w-[90px] px-4 py-3">{{ text.adminTableSuper }}</TableHead>
+                  <TableHead class="min-w-[90px] px-4 py-3">{{ text.adminTableTotp }}</TableHead>
                   <TableHead class="min-w-[140px] px-4 py-3">{{ text.adminTableCreatedAt }}</TableHead>
                   <TableHead class="min-w-[140px] px-4 py-3">{{ text.adminTableLastLoginAt }}</TableHead>
                   <TableHead class="min-w-[160px] px-4 py-3 text-right">{{ text.tableOperation }}</TableHead>
@@ -833,6 +874,9 @@ onMounted(async () => {
                   <TableCell class="min-w-[90px] px-4 py-3 text-xs">
                     <span :class="item.is_super ? 'text-emerald-600' : 'text-muted-foreground'">{{ item.is_super ? text.yes : text.no }}</span>
                   </TableCell>
+                  <TableCell class="min-w-[90px] px-4 py-3 text-xs">
+                    <span :class="item.totp_enabled ? 'text-emerald-600' : 'text-muted-foreground'">{{ item.totp_enabled ? text.adminTotpEnabled : text.adminTotpDisabled }}</span>
+                  </TableCell>
                   <TableCell class="min-w-[140px] px-4 py-3 text-xs text-muted-foreground">{{ formatDateTime(item.created_at) }}</TableCell>
                   <TableCell class="min-w-[140px] px-4 py-3 text-xs text-muted-foreground">{{ formatDateTime(item.last_login_at) }}</TableCell>
                   <TableCell class="min-w-[160px] px-4 py-3">
@@ -842,6 +886,14 @@ onMounted(async () => {
                       </Button>
                       <Button size="sm" variant="outline" @click="openAdminEditForm(item)">
                         {{ text.edit }}
+                      </Button>
+                      <Button
+                        v-if="authStore.isSuper && item.totp_enabled"
+                        size="sm"
+                        variant="outline"
+                        @click="resetAdmin2FA(item)"
+                      >
+                        {{ text.adminTotpReset }}
                       </Button>
                       <Button size="sm" variant="outline" class="text-destructive" @click="handleDeleteAdmin(item)">
                         {{ text.delete }}

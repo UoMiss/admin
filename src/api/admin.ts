@@ -27,13 +27,46 @@ export interface AdminLoginRequest {
   captcha_payload?: CaptchaPayload
 }
 
-export interface AdminLoginResponse {
+export interface AdminLoginPasswordResponse {
+  requires_totp: false
   token: string
   user: {
     id: number
     username: string
   }
   expires_at: string
+}
+
+export interface AdminLoginChallengeResponse {
+  requires_totp: true
+  challenge_token: string
+  challenge_expires_at: string
+}
+
+export type AdminLoginResponse = AdminLoginPasswordResponse | AdminLoginChallengeResponse
+
+export interface TwoFAStatus {
+  enabled: boolean
+  enabled_at?: string
+  recovery_codes_remaining: number
+  recovery_codes_total: number
+}
+
+export interface SetupTwoFAResponse {
+  secret: string
+  otpauth_url: string
+  expires_at: string
+}
+
+export interface EnableTwoFAResponse {
+  enabled_at: string
+  recovery_codes: string[]
+}
+
+export interface Verify2FAPayload {
+  challenge_token: string
+  code?: string
+  recovery_code?: string
 }
 
 export interface AdminAuthzPolicy {
@@ -56,6 +89,8 @@ export interface AdminAuthzAdmin {
   last_login_at?: string
   created_at?: string
   roles?: string[]
+  totp_enabled?: boolean
+  totp_enabled_at?: string
 }
 
 export interface AuthzCreateAdminRequest {
@@ -227,6 +262,13 @@ export interface AdminAffiliateSetting {
 
 export const adminAPI = {
   login: (data: AdminLoginRequest) => api.post('/admin/login', data),
+  verify2FA: (data: Verify2FAPayload) => api.post('/admin/login/verify-2fa', data),
+  get2FAStatus: () => api.get('/admin/2fa/status'),
+  setup2FA: () => api.post('/admin/2fa/setup', {}),
+  enable2FA: (data: { code: string }) => api.post('/admin/2fa/enable', data),
+  disable2FA: (data: { code?: string; recovery_code?: string }) => api.post('/admin/2fa/disable', data),
+  regenerateRecoveryCodes: (data: { code: string }) => api.post('/admin/2fa/recovery-codes/regenerate', data),
+  resetAdmin2FA: (id: number) => api.post(`/admin/authz/admins/${id}/2fa/reset`, {}),
   getAuthzMe: () => api.get('/admin/authz/me'),
   listAuthzRoles: () => api.get('/admin/authz/roles'),
   listAuthzAdmins: () => api.get("/admin/authz/admins"),
